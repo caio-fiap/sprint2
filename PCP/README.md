@@ -7,7 +7,7 @@ Desenvolver uma prova de conceito funcional da solução
 Demonstrar a lógica e funcionamento do sistema proposto  
 Estruturar e organizar o projeto utilizando metodologia Kanban  
 ---
-*Objetivos Específicos*  
+**Objetivos Específicos**  
 Demonstrar ao menos uma funcionalidade prática da solução  
 Apresentar a lógica do sistema e sua aplicação no contexto do ChargeGrid  
 Evidenciar conceitos relacionados a:  
@@ -16,7 +16,7 @@ tarifação e pagamento
 interoperabilidade  
 inteligência artificial  
 Organizar o projeto em um quadro Kanban  
----  
+---
 **Tarefa**  
 Desenvolver uma prova de conceito funcional da solução proposta na Sprint 1.  
 A entrega pode conter:  
@@ -36,7 +36,7 @@ Nome e RM dos integrantes
 Link do vídeo no YouTube não listado  
 Link do repositório GitHub  
 Link do quadro Kanban do projeto  
----  
+---
 **Requisitos Obrigatórios**  
 O vídeo deve:  
 ter no máximo 5 minutos  
@@ -54,7 +54,7 @@ estar organizado
 conter tarefas reais do projeto  
 evidenciar divisão e evolução das atividades  
 possuir acesso público para correção  
----  
+---
 **Observações Importantes**  
 O foco da Sprint é a evolução prática do projeto  
 Simulações devem possuir fundamento técnico  
