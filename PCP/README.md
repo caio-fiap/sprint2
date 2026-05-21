@@ -7,7 +7,7 @@ Desenvolver uma prova de conceito funcional da solução
 Demonstrar a lógica e funcionamento do sistema proposto  
 Estruturar e organizar o projeto utilizando metodologia Kanban  
 ---
-**Objetivos Específicos**  
+*Objetivos Específicos*  
 Demonstrar ao menos uma funcionalidade prática da solução  
 Apresentar a lógica do sistema e sua aplicação no contexto do ChargeGrid  
 Evidenciar conceitos relacionados a:  
