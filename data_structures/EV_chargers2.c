@@ -9,6 +9,7 @@ struct Carro{
     char placa[8];
     int ano;
     float bateria; //Em kW
+    int porcentagem_bateria;
 };
 
 struct Vaga{
@@ -21,7 +22,31 @@ struct Vaga{
 };
 
 void conectar_veiculo(struct Vaga vagas[]){
-    
+    int vaga_encontrada = -1;
+    int i;
+    for(i = 0; i < 5; i++){
+        if(vagas[i].status == 0){
+            vaga_encontrada = i;
+            break;
+        }
+    }
+    if(vaga_encontrada == -1){
+        printf("Nenhuma vaga disponivel...\n");
+    } else{
+        printf("Vaga %d esta disponivel\n", vaga_encontrada);
+        printf("Digite a placa do carro; ");
+        fgets(vagas[vaga_encontrada].carro.placa, 8, stdin);
+        while(getchar() != '\n');
+        printf("\n");
+        printf("Digite a porcentagem atual da bateria do carro: ");
+        scanf("%d", &vagas[vaga_encontrada].carro.porcentagem_bateria);
+        printf("\n");
+        printf("Digite a potencia da bateria (em kW) do carro: ");
+        scanf("%f", &vagas[vaga_encontrada].carro.bateria);
+
+
+    }
+
 }
 
 
