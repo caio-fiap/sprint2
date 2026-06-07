@@ -15,7 +15,7 @@ struct Carro{
 struct Vaga{
     int status; // 0 para vaga livre, 1 para ocupada
     float potencia_atual; //Potencia que o carregador está entregado, ela pode variar dependendo da quantidade de carregadores conectados 
-    int hora_inicio;
+    time_t hora_inicio;
     float energia_consumida; 
     float custo_total;
     struct Carro carro; 
