@@ -8,6 +8,7 @@
 #define GREEN "\033[1;32m"
 #define YELLOW "\033[1;33m"
 #define BLUE "\033[1;34m"
+#define ORANGE "\033[38;5;208m"
 #define RESET "\033[0m"
 
 struct Carro{
@@ -177,6 +178,41 @@ void calcular_tarifa(struct Vaga vagas[], int idx){
     vagas[idx].custo_total = vagas[idx].energia_consumida * tarifa_kWh;
 }
 
+void desconectar_veiculo(struct Vaga vagas[]){
+    int i; 
+    int vaga_escolhida = -1; 
+    for(i = 0; i < 5; i++){
+        if(vagas[i].status == 1){
+            printf("Vaga %d -"RED" OCUPADA\n"RESET, i + 1);
+        }
+    }
+    do{
+    printf("Digite em qual vaga esta o veiculo que deseja desconectar: ");
+    scanf("%d", &vaga_escolhida);
+    if(vaga_escolhida >= 6 || vaga_escolhida < 1){
+        printf("Vaga escolhda invalida... Digite novamente a vaga desejada\n"); //Verifica se a vaga selecionada é válida 
+        vaga_escolhida = -1;
+    }
+    else if(vagas[vaga_escolhida -1].status == 0){ //Verifica se a vaga selecionada está ocupadas   
+        printf("A vaga selecionada esta livre... nao ha carros para desconectar nesta vaga\n");
+        vaga_escolhida = -1;
+    }
+    else{
+        printf("Vaga %d escolhida... Prosseguindo para a desconexao...\n", vaga_escolhida);
+    }
+    }while(vaga_escolhida == -1);
+    
+    calcular_tarifa(vagas, vaga_escolhida -1);  
+    printf(ORANGE"===RESUMO DA SESSAO===\n"RESET);
+    printf("Placa: %s\n", vagas[vaga_escolhida -1].carro.placa);
+    printf("Energia consumida: %.2f kWh\n", vagas[vaga_escolhida -1].energia_consumida);
+    printf("Custo total: R$ %.2f\n", vagas[vaga_escolhida -1].custo_total);
+    vagas[vaga_escolhida -1].status = 0;
+    vagas[vaga_escolhida -1].energia_consumida = 0;
+    vagas[vaga_escolhida -1].custo_total = 0;
+    vagas[vaga_escolhida -1].potencia_atual = 0;
+    vagas[vaga_escolhida -1].carro.placa[0] = '\0';
+}
 
 int main(){
     system("clear"); //Comando para limpar o terminal assim que o program iniciar
@@ -210,6 +246,7 @@ int main(){
 
             case 2: 
             printf("Opcao 2, deconectar veiculo, selecionada\n");
+            desconectar_veiculo(vagas);
             break;
 
             case 3:
