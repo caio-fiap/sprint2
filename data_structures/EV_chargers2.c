@@ -26,6 +26,7 @@ struct Vaga{
     float custo_total;
     int tipo_carga;
     int tempo_estimado; 
+    float tarifa_kWh;
     struct Carro carro; 
 };
 
@@ -51,6 +52,27 @@ void redistribuir_potencia(struct Vaga vagas[]){
             vagas[i].tempo_estimado = (int)((energia_restante / vagas[i].potencia_atual) * 60);
         }
     }
+}
+
+float determinar_tarifa(struct Vaga vagas[], int idx){
+    time_t agora = time(NULL);
+    struct tm*horario = localtime(&agora);  
+    int dia_sem = horario->tm_wday;
+    int tempo_atual = horario->tm_hour * 60 + horario->tm_min;
+
+    float tarifa; 
+    if((dia_sem > 0 && dia_sem < 6) && (tempo_atual >= 1050 && tempo_atual <= 1230)){
+        tarifa = 1.12;
+    }
+    else if((dia_sem > 0 && dia_sem < 6) && (tempo_atual >= 990 && tempo_atual <= 1290)){
+        tarifa = 0.72;
+    }
+    else{
+        tarifa = 0.51;
+    }
+    
+    if(vagas[idx].tipo_carga == 1) tarifa *= 1.3;
+    return tarifa;
 }
 
 void conectar_veiculo(struct Vaga vagas[]){
@@ -169,10 +191,10 @@ void ver_status(struct Vaga vagas[]){
             int restante = vagas[i].tempo_estimado - minutos;
             if(restante < 0) restante = 0;
             printf("Porcentagem atual da bateria: ");
-            if(porc_atual <= 25)printf(RED"%.2f\n"RESET, porc_atual);
-            else if(porc_atual <=50)printf(ORANGE"%.2f\n"RESET, porc_atual);
-            else if(porc_atual <=75)printf(YELLOW"%.2f\n"RESET, porc_atual);
-            else printf(GREEN"%.2f\n"RESET, porc_atual);
+            if(porc_atual <= 25)printf(RED"%.2f%%\n"RESET, porc_atual);
+            else if(porc_atual <=50)printf(ORANGE"%.2f%%\n"RESET, porc_atual);
+            else if(porc_atual <=75)printf(YELLOW"%.2f%%\n"RESET, porc_atual);
+            else printf(GREEN"%.2f%%\n"RESET, porc_atual);
             printf("Tempo restante estimado: %d minutos\n", restante);
         }
     }
@@ -187,7 +209,6 @@ void calcular_tarifa(struct Vaga vagas[], int idx){
     struct tm*horario = localtime(&agora);
     int dia_sem = horario->tm_wday;
     int tempo_atual = horario->tm_hour * 60 + horario->tm_min;
-
     float tarifa_kWh;
     if ((dia_sem > 0 && dia_sem < 6)&&(tempo_atual >= 1050 && tempo_atual <= 1230)){
         // Horário de pico: seg - sex das 17:30 às 20:30
@@ -218,10 +239,16 @@ void calcular_tarifa(struct Vaga vagas[], int idx){
 void desconectar_veiculo(struct Vaga vagas[]){
     int i; 
     int vaga_escolhida = -1; 
+    int tem_ocupada = 0;
     for(i = 0; i < 5; i++){
         if(vagas[i].status == 1){
             printf("Vaga %d -"RED" OCUPADA\n"RESET, i + 1);
+            tem_ocupada = 1;
         }
+    }
+    if(tem_ocupada == 0){
+        printf("Nenhum veiculo conectado no momento. \n");
+        return;
     }
     do{
     printf("Digite em qual vaga esta o veiculo que deseja desconectar: ");
@@ -252,6 +279,18 @@ void desconectar_veiculo(struct Vaga vagas[]){
     redistribuir_potencia(vagas);
 }
 
+void verificar_sessoes_concluidas(struct Vaga vagas[]){
+    int i;
+    for(i = 0; i < 5; i++){
+        if(vagas[i].status == 1){
+            int decorrido = (int)(difftime(time(NULL), vagas[i].hora_inicio) / 60);
+            if(decorrido >= vagas[i].tempo_estimado){
+                printf(GREEN"[AVISO] Vaga %d - carregamento concluido! Placa: %s\n"RESET, i+1, vagas[i].carro.placa);
+            }
+        }
+    }
+}
+
 int main(){
     system("clear"); //Comando para limpar o terminal assim que o program iniciar
     struct Vaga vagas[5];// 5 é o número de vagas 
@@ -262,9 +301,11 @@ int main(){
         vagas[i].energia_consumida = 0;
         vagas[i].custo_total = 0;
     }
-    do{
+
         printf("====== ChargeGrid Inteligence ======\n"); //Menu de funcionamento
         printf("Bem vindo!\n");
+    do{
+        verificar_sessoes_concluidas(vagas);
         printf("Digite uma das opcoes abaixo\n");
         printf("1 - Conectar veiculo\n");
         printf("2 - desconectar veiculo\n");
