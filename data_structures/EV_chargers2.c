@@ -25,8 +25,33 @@ struct Vaga{
     float energia_consumida; 
     float custo_total;
     int tipo_carga;
+    int tempo_estimado; 
     struct Carro carro; 
 };
+
+void redistribuir_potencia(struct Vaga vagas[]){
+    int i;
+    int vagas_ocupadas = 0; //Número de vagas ocupadas
+    for(i = 0; i < 5; i++){ //Verifica quantas vagas estão ocupadas
+        if(vagas[i].status == 1){
+            vagas_ocupadas++;
+        }
+    }
+    if(vagas_ocupadas == 0){ // Se o número de vagas_ocupadas for 0, o programa encerra a função redistribuir potencia para não dividir por zero no proximo loop
+        printf("Todas as vagas estao "GREEN"LIVRES\n"RESET);
+        return;
+    }
+    else{
+        printf("N de vagas ocupadas: "YELLOW"%d\n"RESET, vagas_ocupadas);
+    }
+    for(i = 0; i < 5; i++){
+        if(vagas[i].status == 1){
+            vagas[i].potencia_atual = LIMITE_POTENCIA / vagas_ocupadas;
+            float energia_restante = vagas[i].carro.bateria * (100 - vagas[i].carro.porcentagem_bateria) / 100.0;
+            vagas[i].tempo_estimado = (int)((energia_restante / vagas[i].potencia_atual) * 60);
+        }
+    }
+}
 
 void conectar_veiculo(struct Vaga vagas[]){
     int i;
@@ -119,6 +144,7 @@ void conectar_veiculo(struct Vaga vagas[]){
 
     vagas[vaga_escolhida -1].status = 1;
     vagas[vaga_escolhida -1].hora_inicio = time(NULL);
+    redistribuir_potencia(vagas);
     printf("Veiculo conectado com sucesso na vaga %d!\n", vaga_escolhida);
 }
 
@@ -137,6 +163,17 @@ void ver_status(struct Vaga vagas[]){
             double segundos = difftime(time(NULL), vagas[i].hora_inicio);
             int minutos = (int)(segundos / 60);
             printf("Tempo de carregamento: %d minutos\n", minutos);
+            float energia_carregada = (segundos / 3600.0) * vagas[i].potencia_atual;
+            float porc_atual = vagas[i].carro.porcentagem_bateria + (energia_carregada / vagas[i].carro.bateria) * 100;
+            if(porc_atual > 100) porc_atual = 100;
+            int restante = vagas[i].tempo_estimado - minutos;
+            if(restante < 0) restante = 0;
+            printf("Porcentagem atual da bateria: ");
+            if(porc_atual <= 25)printf(RED"%.2f\n"RESET, porc_atual);
+            else if(porc_atual <=50)printf(ORANGE"%.2f\n"RESET, porc_atual);
+            else if(porc_atual <=75)printf(YELLOW"%.2f\n"RESET, porc_atual);
+            else printf(GREEN"%.2f\n"RESET, porc_atual);
+            printf("Tempo restante estimado: %d minutos\n", restante);
         }
     }
 }
@@ -212,6 +249,7 @@ void desconectar_veiculo(struct Vaga vagas[]){
     vagas[vaga_escolhida -1].custo_total = 0;
     vagas[vaga_escolhida -1].potencia_atual = 0;
     vagas[vaga_escolhida -1].carro.placa[0] = '\0';
+    redistribuir_potencia(vagas);
 }
 
 int main(){
