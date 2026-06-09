@@ -11,6 +11,9 @@
 #define ORANGE "\033[38;5;208m"
 #define RESET "\033[0m"
 
+int ocpp_msg_id = 1;
+int ocpp_transaction_counter = 100;
+
 struct Carro{
     char placa[8]; 
     float bateria; //Em kW
@@ -26,6 +29,7 @@ struct Vaga{
     int tipo_carga;
     int tempo_estimado; 
     float tarifa_kWh;
+    int transaction_id;
     struct Carro carro; 
 };
 
@@ -73,6 +77,87 @@ float determinar_tarifa(struct Vaga vagas[], int idx){
     if(vagas[idx].tipo_carga == 1) tarifa *= 1.3;
     return tarifa;
 }
+
+// Inicio da área de OCPP
+
+void ocpp_boot_notification(){
+    time_t agora = time(NULL);
+    struct tm *t = gmtime(&agora);
+    char timestamp[25];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", t);
+
+    printf(BLUE"\n[OCPP OUT] [2, \"%d\", \"BootNotification\", " RESET, ocpp_msg_id);
+    printf(BLUE"{\"chargePointVendor\":\"goodWe\", \"chargePointModel\":\"HCA-G2\", "RESET);
+    printf(BLUE"\"chargePointSerialNumber\":\"CG-SP-001\"}]\n"RESET);
+    printf(GREEN"[OCPP IN]  [3, \"%d\", {\"status\":\"Accepted\", "RESET, ocpp_msg_id);
+    printf(GREEN"\"currentTime\":\"%s\", \"heartbeatInterval\":300}]\n\n"RESET, timestamp);
+    ocpp_msg_id++;
+}
+
+void ocpp_start_transaction(struct Vaga vagas[], int idx){
+    time_t agora = time(NULL);
+    struct tm *t = gmtime(&agora);
+    char timestamp[25];
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", t);
+
+    vagas[idx].transaction_id = ocpp_transaction_counter++;
+
+    printf(BLUE"\n[OCPP OUT] [2, \"%d\", \"StartTransaction\", "RESET, ocpp_msg_id);
+    printf(BLUE"{\"connectorId\":%d, \"idTag\":\"%s\", \"meterStart\":0, \"timestamp\":\"%s\"}]\n"RESET,
+           idx + 1, vagas[idx].carro.placa, timestamp);
+    printf(GREEN"[OCPP IN]  [3, \"%d\", {\"idTagInfo\":{\"status\":\"Accepted\"}, \"transactionId\":%d}]\n\n"RESET,
+           ocpp_msg_id, vagas[idx].transaction_id);
+    ocpp_msg_id++;
+}
+
+void ocpp_stop_transaction(struct Vaga vagas[], int idx){
+    time_t agora = time(NULL);
+    struct tm *t = gmtime(&agora);
+    char timestamp[25]; 
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", t);
+
+    int meter_stop = (int)(vagas[idx].energia_consumida * 1000); //converte kWh para Wh
+
+    printf(BLUE"\n[OCPP OUT] [2, \"%d\", \"StopTransaction\", "RESET, ocpp_msg_id);
+    printf(BLUE"{\"transactionId\":%d, \"meterStop\":%d, \"timestamp\":\"%s\", \"reason\":\"Local\"}]\n"RESET,
+           vagas[idx].transaction_id, meter_stop, timestamp);
+    printf(GREEN"[OCPP IN]  [3, \"%d\", {\"idTagInfo\":{\"status\":\"Accepted\"}}]\n\n"RESET, ocpp_msg_id);
+    ocpp_msg_id++;
+}
+
+void simular_ocpp(struct Vaga vagas[]){
+    int i; 
+    int tem_ativa = 0; 
+
+    printf(BLUE"\n=== SIMULACAO OCPP 1.6 - MeterValues ===\n"RESET);
+
+    for(i = 0; i < 5; i++){
+        if(vagas[i].status == 1){
+            tem_ativa = 1;
+            double segundos = difftime(time(NULL), vagas[i].hora_inicio);
+            float energia_atual = (segundos / 3600.0) * vagas[i].potencia_atual;
+            int meter_wh = (int)(energia_atual * 1000);
+
+            time_t agora = time(NULL);
+            struct tm *t = gmtime(&agora);
+            char timestamp[25];
+            strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", t);
+
+            printf(BLUE"[OCPP OUT] [2, \"%d\", \"MeterValues\", "RESET, ocpp_msg_id);
+            printf(BLUE"{\"connectorId\":%d, \"transactionId\":%d, "RESET, i + 1, vagas[i].transaction_id);
+            printf(BLUE"\"meterValue\":[{\"timestamp\":\"%s\", \"sampledValue\":["RESET, timestamp);
+            printf(BLUE"{\"value\":\"%d\", \"unit\":\"Wh\", \"measurand\":\"Energy.Active.Import.Register\"}, "RESET, meter_wh);
+            printf(BLUE"{\"value\":\"%.1f\", \"unit\":\"kW\", \"measurand\":\"Power.Active.Import\"}]}]}]\n"RESET, vagas[i].potencia_atual);
+            printf(GREEN"[OCPP IN]  [3, \"%d\", {\"status\":\"Accepted\"}]\n\n"RESET, ocpp_msg_id);
+            ocpp_msg_id++;
+        }
+    }
+
+    if(tem_ativa == 0){
+        printf(YELLOW"Nenhuma sessao ativa para enviar MeterValues.\n"RESET);
+    }
+}
+// Fim da área OCPP
 
 void conectar_veiculo(struct Vaga vagas[]){
     int i;
@@ -177,6 +262,7 @@ void conectar_veiculo(struct Vaga vagas[]){
     vagas[vaga_escolhida -1].status = 1;
     vagas[vaga_escolhida -1].hora_inicio = time(NULL);
     redistribuir_potencia(vagas);
+    ocpp_start_transaction(vagas, vaga_escolhida -1);
     printf("Veiculo conectado com sucesso na vaga %d!\n", vaga_escolhida);
     sleep(1);
     printf("\n");
@@ -260,6 +346,7 @@ void desconectar_veiculo(struct Vaga vagas[]){
     printf("Placa: %s\n", vagas[vaga_escolhida -1].carro.placa);
     printf("Energia consumida: %.2f kWh\n", vagas[vaga_escolhida -1].energia_consumida);
     printf("Custo total: R$ %.2f\n", vagas[vaga_escolhida -1].custo_total);
+    ocpp_stop_transaction(vagas, vaga_escolhida -1);
     vagas[vaga_escolhida -1].status = 0;
     vagas[vaga_escolhida -1].energia_consumida = 0;
     vagas[vaga_escolhida -1].custo_total = 0;
@@ -291,10 +378,12 @@ int main(){
         vagas[i].potencia_atual = 0;
         vagas[i].energia_consumida = 0;
         vagas[i].custo_total = 0;
+        vagas[i].transaction_id = 0;
     }
         printf("\n");
         printf(RED"====== ChargeGrid Inteligence ======\n"RESET); //Menu de funcionamento
         printf("Bem vindo!\n");
+        ocpp_boot_notification();
     do{
         verificar_sessoes_concluidas(vagas);
         printf("Digite uma das opcoes abaixo\n");
@@ -330,6 +419,7 @@ int main(){
 
             case 5: 
             printf("Opcao 5, simular envio OCPP, selecionada\n");
+            simular_ocpp(vagas);
             break;
 
             default: printf("Opcao invalida... tente novamente\n");
