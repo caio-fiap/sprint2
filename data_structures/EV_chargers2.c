@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-//#include <unistd.h>
 #include <stdlib.h>
+#include <unistd.h>
 #define LIMITE_POTENCIA  50.0
 #define RED "\033[1;31m"
 #define GREEN "\033[1;32m"
@@ -12,8 +12,7 @@
 #define RESET "\033[0m"
 
 struct Carro{
-    char placa[8];
-    int ano;
+    char placa[8]; 
     float bateria; //Em kW
     int porcentagem_bateria;
 };
@@ -79,16 +78,16 @@ void conectar_veiculo(struct Vaga vagas[]){
     int i;
     int vaga_escolhida = -1;
 
+    do{
+    printf("\n");
     for(i = 0; i < 5; i++){ //Loop verifica o status das vagas
         if(vagas[i].status == 1){
-            printf("Vaga %d ocupada\n", i + 1);
+            printf("Vaga %d "RED"ocupada\n"RESET, i + 1);
         }
         else{
-            printf("Vaga %d livre\n", i + 1);
+            printf("Vaga %d "GREEN"livre\n"RESET, i + 1);
         }
     }
-
-    do{
     printf("Digite qual vaga deseja utilizar: ");
     scanf("%d", &vaga_escolhida);   
     if(vaga_escolhida >= 6 || vaga_escolhida < 1){ //Verifica se o numero digitado pelo usuário eh valido
@@ -100,7 +99,9 @@ void conectar_veiculo(struct Vaga vagas[]){
         vaga_escolhida = -1;
     }
     else{printf("Vaga %d escolhida... Prosseguindo...\n", vaga_escolhida);}
+    sleep(1);
     }while(vaga_escolhida == -1); //O loop encerra quando o usuario escolhe uma vaga valida e livre
+    printf("\n");
 
     //Coleta da placa do carro
     printf("Digite a placa do carro: ");
@@ -113,27 +114,36 @@ void conectar_veiculo(struct Vaga vagas[]){
     printf("Digite a porcentagem da bateria do carro: ");
     scanf("%d", &vagas[vaga_escolhida -1].carro.porcentagem_bateria);
     printf("\n");
-    printf("Porcentagem da bateria em %d\n", vagas[vaga_escolhida -1].carro.porcentagem_bateria);
-    printf("Por favor confirme se a porcentagem da bateria esta correta (1 para sim | 0 para nao): ");
+
+    if(vagas[vaga_escolhida -1].carro.porcentagem_bateria < 0 || vagas[vaga_escolhida-1].carro.porcentagem_bateria > 99){
+        printf("Porcentagem invalida. Digite  um valor entre"BLUE" 0"RESET" e"BLUE" 99"RESET". \n");
+        confirm = 0;
+        continue;
+    }
+    printf("Porcentagem da bateria em: "YELLOW"%d%%\n"RESET, vagas[vaga_escolhida -1].carro.porcentagem_bateria);
+    printf("Por favor confirme se a porcentagem da bateria esta correta "GREEN"(1 para sim"RESET" | "RED"2 para nao)"RESET": ");
     scanf("%d", &confirm);
     printf("\n");
-    if(confirm == 0){printf("Por favor digite novamente a porcentagem da bateria\n");}
-    else if(confirm == 1 ){printf("Porcentagem da bateria confirmada... Prosseguindo\n");}
+    if(confirm == 2){printf("Por favor digite novamente a porcentagem da bateria\n"); confirm = 0;}
+    else if(confirm == 1){printf("Porcentagem da bateria confirmada... Prosseguindo\n");}
     else{
-        printf("Opcao invalida... tente novamente\n"); 
+        printf(RED"Opcao invalida... "RESET"tente novamente\n"); 
         confirm = 0;
     }
     }while(confirm == 0);
+    sleep(1);
+    printf("\n");
 
     //coleta a potencia da bateria do carro
     int opcao_bateria = -1;  
     do{
     printf("Deseja inserir a potencia da bateria manualmente?\n");
-    printf("* Se a sua esolha for 0 (nao) o programa automaticamente definira a poteicna da bateria em 38.8kWh\n");
-    printf("(1 para sim | 0 para nao (padrao 38.8kWh))");
+    printf("* Se a sua esolha for 2 (nao) o programa automaticamente definira a poteicna da bateria em 38.8kWh\n");
+    printf(GREEN"(1 para sim"RESET" | "RED"2 para nao (padrao 38.8kWh)"RESET")");
     printf("Opcao: ");
     scanf("%d", &opcao_bateria);
-    if(opcao_bateria > 1 || opcao_bateria < 0){
+    printf("\n");
+    if(opcao_bateria != 1 && opcao_bateria != 2){
         printf("Opcao invalida... Tente novamente\n");
         opcao_bateria = -1;
     }
@@ -147,27 +157,29 @@ void conectar_veiculo(struct Vaga vagas[]){
         printf("Potencia da bateria definida pelo sistema em 38.8kWh\n");
         vagas[vaga_escolhida -1].carro.bateria = 38.8;
     }
+    sleep(1);
     }while(opcao_bateria == -1);
+    printf("\n");
 
     // Decisao sobre o tipo da carga que o usuario deseja
     printf("Escolha o tipo de carregamento\n");
-    printf("1 para carga rapida  | 2 para carga lenta\n");
+    printf(RED"1 para carga rapida"RESET"  | "BLUE"2 para carga lenta\n"RESET);
     printf("Opcao: ");
     scanf("%d", &vagas[vaga_escolhida -1].tipo_carga);
     if(vagas[vaga_escolhida-1].tipo_carga != 1 && vagas[vaga_escolhida-1].tipo_carga != 2){
         vagas[vaga_escolhida-1].tipo_carga = 2; // padrão lento se invalido
-        printf("Opcao invalida... Carga lenta definida automaticamente\n");
+        printf(RED"Opcao invalida..."RESET" Carga lenta definida automaticamente\n");
     }
 
-    //time_t agora = time(NULL);
-    //struct tm*horario = localtime(&agora);
-    //int hora =  horario->tm_hour;
-    //int dia_sem = horario->tm_wday;
+    vagas[vaga_escolhida -1].tarifa_kWh = determinar_tarifa(vagas, vaga_escolhida -1);
+    printf("Tarifa definida: R$%.2f/kWh\n", vagas[vaga_escolhida-1].tarifa_kWh);
 
     vagas[vaga_escolhida -1].status = 1;
     vagas[vaga_escolhida -1].hora_inicio = time(NULL);
     redistribuir_potencia(vagas);
     printf("Veiculo conectado com sucesso na vaga %d!\n", vaga_escolhida);
+    sleep(1);
+    printf("\n");
 }
 
 void ver_status(struct Vaga vagas[]){
@@ -175,13 +187,14 @@ void ver_status(struct Vaga vagas[]){
     for(i = 0; i < 5; i++){
         if(vagas[i].status == 0){
             printf("Vaga %d -"GREEN" LIVRE\n"RESET, i + 1);
+            printf("\n");
         }
         else{
             printf("Vaga %d\n", i + 1);
             printf("PLACA: %s\n", vagas[i].carro.placa);
             printf("Tipo de carga selecionada: ");
-            if(vagas[i].tipo_carga == 1){printf("RAPIDA\n");}
-            else{printf("LENTA\n");}
+            if(vagas[i].tipo_carga == 1){printf(ORANGE"RAPIDA\n"RESET);}
+            else{printf(ORANGE"LENTA\n"RESET);}
             double segundos = difftime(time(NULL), vagas[i].hora_inicio);
             int minutos = (int)(segundos / 60);
             printf("Tempo de carregamento: %d minutos\n", minutos);
@@ -196,42 +209,15 @@ void ver_status(struct Vaga vagas[]){
             else if(porc_atual <=75)printf(YELLOW"%.2f%%\n"RESET, porc_atual);
             else printf(GREEN"%.2f%%\n"RESET, porc_atual);
             printf("Tempo restante estimado: %d minutos\n", restante);
+            printf("\n");
         }
     }
+    sleep(3);
 }
 
-void calcular_tarifa(struct Vaga vagas[], int idx){
-    //Calcula o tempo 
+void calcular_tarifa(struct Vaga vagas[], int idx){ //Calcula a tarifa  
     double segundos = difftime(time(NULL), vagas[idx].hora_inicio);
-
-    //Pega a hora e o dia atual
-    time_t agora = time(NULL);
-    struct tm*horario = localtime(&agora);
-    int dia_sem = horario->tm_wday;
-    int tempo_atual = horario->tm_hour * 60 + horario->tm_min;
-    float tarifa_kWh;
-    if ((dia_sem > 0 && dia_sem < 6)&&(tempo_atual >= 1050 && tempo_atual <= 1230)){
-        // Horário de pico: seg - sex das 17:30 às 20:30
-        printf("\nHorario de pico, tarifa mais cara\n");
-        tarifa_kWh = 1.12;
-        printf("Tarifa do horario: %.2fkWh\n", tarifa_kWh);
-    }
-    else if ((dia_sem > 0 && dia_sem < 6) && (tempo_atual >= 990 && tempo_atual <= 1290)) {
-        // Horário intermediário: seg - sex das 16:30-17:30 e 20:30-21:30
-        printf("Horario intermediario\n");
-        tarifa_kWh = 0.72;
-        printf("Tarifa do horario: %.2fkWh\n", tarifa_kWh);
-        }
-    else {
-        // Fora de ponta: demais horários e fins de semana
-        printf("Horario fora de ponta\n");
-        tarifa_kWh = 0.51;
-        printf("Tarifa do horario: %.2fkWh\n", tarifa_kWh);
-    }
-
-    //Multiplica por tipo_carga
-    if (vagas[idx].tipo_carga == 1) tarifa_kWh *= 1.3; //Carga rapida
-    
+    float tarifa_kWh = vagas[idx].tarifa_kWh;   
     vagas[idx].energia_consumida = (segundos / 3600.0) * vagas[idx].potencia_atual;
     vagas[idx].custo_total = vagas[idx].energia_consumida * tarifa_kWh;
 }
@@ -240,6 +226,7 @@ void desconectar_veiculo(struct Vaga vagas[]){
     int i; 
     int vaga_escolhida = -1; 
     int tem_ocupada = 0;
+    printf("\n");
     for(i = 0; i < 5; i++){
         if(vagas[i].status == 1){
             printf("Vaga %d -"RED" OCUPADA\n"RESET, i + 1);
@@ -247,18 +234,20 @@ void desconectar_veiculo(struct Vaga vagas[]){
         }
     }
     if(tem_ocupada == 0){
-        printf("Nenhum veiculo conectado no momento. \n");
+        printf(RED"Nenhum veiculo conectado no momento. \n"RESET);
         return;
     }
+
     do{
+    printf("\n");
     printf("Digite em qual vaga esta o veiculo que deseja desconectar: ");
     scanf("%d", &vaga_escolhida);
     if(vaga_escolhida >= 6 || vaga_escolhida < 1){
-        printf("Vaga escolhda invalida... Digite novamente a vaga desejada\n"); //Verifica se a vaga selecionada é válida 
+        printf(RED"Vaga escolhda invalida..."RESET" Digite novamente a vaga desejada\n"); //Verifica se a vaga selecionada é válida 
         vaga_escolhida = -1;
     }
     else if(vagas[vaga_escolhida -1].status == 0){ //Verifica se a vaga selecionada está ocupadas   
-        printf("A vaga selecionada esta livre... nao ha carros para desconectar nesta vaga\n");
+        printf(YELLOW"A vaga selecionada esta livre..."RESET" nao ha carros para desconectar nesta vaga\n");
         vaga_escolhida = -1;
     }
     else{
@@ -277,6 +266,8 @@ void desconectar_veiculo(struct Vaga vagas[]){
     vagas[vaga_escolhida -1].potencia_atual = 0;
     vagas[vaga_escolhida -1].carro.placa[0] = '\0';
     redistribuir_potencia(vagas);
+    sleep(3);
+    printf("\n");
 }
 
 void verificar_sessoes_concluidas(struct Vaga vagas[]){
@@ -301,19 +292,19 @@ int main(){
         vagas[i].energia_consumida = 0;
         vagas[i].custo_total = 0;
     }
-
-        printf("====== ChargeGrid Inteligence ======\n"); //Menu de funcionamento
+        printf("\n");
+        printf(RED"====== ChargeGrid Inteligence ======\n"RESET); //Menu de funcionamento
         printf("Bem vindo!\n");
     do{
         verificar_sessoes_concluidas(vagas);
         printf("Digite uma das opcoes abaixo\n");
         printf("1 - Conectar veiculo\n");
-        printf("2 - desconectar veiculo\n");
-        printf("3 - ver status das vagas\n");
-        printf("4 - ver relatorio\n");
+        printf("2 - Desconectar veiculo\n");
+        printf("3 - Ver status das vagas\n");
+        printf("4 - Ver relatorio\n");
         printf("5 - Simular envio OCPP\n");
         printf("0 - Encerrar o programa\n");
-        printf("Resposta: ");
+        printf("Opcao: ");
         scanf("%d", &opcao);
         printf("\n");
 
