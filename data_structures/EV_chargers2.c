@@ -13,10 +13,13 @@
 
 int ocpp_msg_id = 1;
 int ocpp_transaction_counter = 100;
+int total_sessoes = 0;
+float total_energia = 0;
+float total_receita = 0;
 
 struct Carro{
     char placa[8]; 
-    float bateria; //Em kW
+    float bateria; //Em kWh
     int porcentagem_bateria;
 };
 
@@ -41,13 +44,7 @@ void redistribuir_potencia(struct Vaga vagas[]){
             vagas_ocupadas++;
         }
     }
-    if(vagas_ocupadas == 0){ // Se o número de vagas_ocupadas for 0, o programa encerra a função redistribuir potencia para não dividir por zero no proximo loop
-        printf("Todas as vagas estao "GREEN"LIVRES\n"RESET);
-        return;
-    }
-    else{
-        printf("N de vagas ocupadas: "YELLOW"%d\n"RESET, vagas_ocupadas);
-    }
+    if(vagas_ocupadas == 0) return;
     for(i = 0; i < 5; i++){
         if(vagas[i].status == 1){
             vagas[i].potencia_atual = LIMITE_POTENCIA / vagas_ocupadas;
@@ -162,17 +159,24 @@ void simular_ocpp(struct Vaga vagas[]){
 void conectar_veiculo(struct Vaga vagas[]){
     int i;
     int vaga_escolhida = -1;
-
-    do{
+    int tem_ocupada = 0; 
+    
     printf("\n");
     for(i = 0; i < 5; i++){ //Loop verifica o status das vagas
         if(vagas[i].status == 1){
             printf("Vaga %d "RED"ocupada\n"RESET, i + 1);
+            tem_ocupada += 1;
         }
         else{
             printf("Vaga %d "GREEN"livre\n"RESET, i + 1);
         }
     }
+    if(tem_ocupada == 5){
+        printf("Todas as vagas estao "RED"OCUPADAS\n"RESET);
+        printf("Por favor, aguarde por uma vaga livre\n");
+        return;
+    }
+   do{
     printf("Digite qual vaga deseja utilizar: ");
     scanf("%d", &vaga_escolhida);   
     if(vaga_escolhida >= 6 || vaga_escolhida < 1){ //Verifica se o numero digitado pelo usuário eh valido
@@ -347,6 +351,9 @@ void desconectar_veiculo(struct Vaga vagas[]){
     printf("Energia consumida: %.2f kWh\n", vagas[vaga_escolhida -1].energia_consumida);
     printf("Custo total: R$ %.2f\n", vagas[vaga_escolhida -1].custo_total);
     ocpp_stop_transaction(vagas, vaga_escolhida -1);
+    total_sessoes += 1;
+    total_energia += vagas[vaga_escolhida -1].energia_consumida;
+    total_receita += vagas[vaga_escolhida -1].custo_total;
     vagas[vaga_escolhida -1].status = 0;
     vagas[vaga_escolhida -1].energia_consumida = 0;
     vagas[vaga_escolhida -1].custo_total = 0;
@@ -367,6 +374,34 @@ void verificar_sessoes_concluidas(struct Vaga vagas[]){
             }
         }
     }
+}
+
+void ver_relatorio(struct Vaga vagas[]){
+    int i;
+    printf(ORANGE"\n===RELATORIO DAS SESSOES DE CARREGAMENTO===\n"RESET);
+    printf("Relatorio geral: \n");
+    printf("Total de sessoes: "YELLOW"%d\n"RESET, total_sessoes);
+    printf("Total de energia utilizada: "YELLOW"%.2f"RESET"kWh\n", total_energia);
+    printf("Ganhos totais: R$"YELLOW"%.2f"RESET"\n", total_receita);
+
+    printf("Relatorio de vagas ativas no momento:\n");
+    for(i = 0; i < 5; i++){
+        if(vagas[i].status == 0){
+            printf("Vaga %d "GREEN"LIVRE\n"RESET, i + 1);
+        }
+        else{
+            printf("Vaga %d:\n", i +1);
+            printf("Placa: %s\n", vagas[i].carro.placa);
+            double segundos = difftime(time(NULL), vagas[i].hora_inicio);
+            int minutos = (int)(segundos / 60);
+            float energia_atual = (segundos / 3600.0) * vagas[i].potencia_atual; 
+            float custo_total = energia_atual * vagas[i].tarifa_kWh;
+            printf("Tempo desde o inicio da sessao: %d minutos\n", minutos);
+            printf("Energia consumida ate o momento: "YELLOW"%.2f"RESET"kWh\n", energia_atual);
+            printf("Custo estimado: R$%.2f\n", custo_total);
+        }
+    }
+    sleep(3);
 }
 
 int main(){
@@ -415,6 +450,7 @@ int main(){
 
             case 4: 
             printf("Opcao 4, ver relatorio, selecionada\n");
+            ver_relatorio(vagas);
             break;
 
             case 5: 
