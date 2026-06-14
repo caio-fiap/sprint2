@@ -149,10 +149,13 @@ void simular_ocpp(struct Vaga vagas[]){
             ocpp_msg_id++;
         }
     }
+    sleep(2);
 
     if(tem_ativa == 0){
         printf(YELLOW"Nenhuma sessao ativa para enviar MeterValues.\n"RESET);
     }
+    printf("\n");
+    sleep(1);
 }
 // Fim da área OCPP
 
@@ -210,7 +213,8 @@ void conectar_veiculo(struct Vaga vagas[]){
         continue;
     }
     printf("Porcentagem da bateria em: "YELLOW"%d%%\n"RESET, vagas[vaga_escolhida -1].carro.porcentagem_bateria);
-    printf("Por favor confirme se a porcentagem da bateria esta correta "GREEN"(1 para sim"RESET" | "RED"2 para nao)"RESET": ");
+    printf("Por favor confirme se a porcentagem da bateria esta correta "GREEN"(1 para sim"RESET" | "RED"2 para nao)\n"RESET);
+    printf("Opcao: ");
     scanf("%d", &confirm);
     printf("\n");
     if(confirm == 2){printf("Por favor digite novamente a porcentagem da bateria\n"); confirm = 0;}
@@ -228,7 +232,7 @@ void conectar_veiculo(struct Vaga vagas[]){
     do{
     printf("Deseja inserir a potencia da bateria manualmente?\n");
     printf("* Se a sua esolha for 2 (nao) o programa automaticamente definira a poteicna da bateria em 38.8kWh\n");
-    printf(GREEN"(1 para sim"RESET" | "RED"2 para nao (padrao 38.8kWh)"RESET")");
+    printf(GREEN"(1 para sim"RESET" | "RED"2 para nao (padrao 38.8kWh)"RESET")\n");
     printf("Opcao: ");
     scanf("%d", &opcao_bateria);
     printf("\n");
@@ -274,6 +278,7 @@ void conectar_veiculo(struct Vaga vagas[]){
 
 void ver_status(struct Vaga vagas[]){
     int i;
+    int confirm = 0;
     for(i = 0; i < 5; i++){
         if(vagas[i].status == 0){
             printf("Vaga %d -"GREEN" LIVRE\n"RESET, i + 1);
@@ -302,7 +307,15 @@ void ver_status(struct Vaga vagas[]){
             printf("\n");
         }
     }
-    sleep(3);
+    do{
+        printf("Digite 1 para retornar ao menu: ");
+        scanf("%d", &confirm);
+        printf("\n");
+        if(confirm != 1){
+            printf("Opcao digitada invalida... tente novamente\n");
+        }
+    }while(confirm != 1);
+    sleep(1);
 }
 
 void calcular_tarifa(struct Vaga vagas[], int idx){ //Calcula a tarifa  
@@ -325,6 +338,8 @@ void desconectar_veiculo(struct Vaga vagas[]){
     }
     if(tem_ocupada == 0){
         printf(RED"Nenhum veiculo conectado no momento. \n"RESET);
+        printf("\n");
+        sleep(1);
         return;
     }
 
@@ -378,16 +393,18 @@ void verificar_sessoes_concluidas(struct Vaga vagas[]){
 
 void ver_relatorio(struct Vaga vagas[]){
     int i;
+    int confirm = 0;
     printf(ORANGE"\n===RELATORIO DAS SESSOES DE CARREGAMENTO===\n"RESET);
     printf("Relatorio geral: \n");
     printf("Total de sessoes: "YELLOW"%d\n"RESET, total_sessoes);
     printf("Total de energia utilizada: "YELLOW"%.2f"RESET"kWh\n", total_energia);
     printf("Ganhos totais: R$"YELLOW"%.2f"RESET"\n", total_receita);
-
+    printf("\n");
     printf("Relatorio de vagas ativas no momento:\n");
     for(i = 0; i < 5; i++){
         if(vagas[i].status == 0){
             printf("Vaga %d "GREEN"LIVRE\n"RESET, i + 1);
+            printf("\n");
         }
         else{
             printf("Vaga %d:\n", i +1);
@@ -399,13 +416,24 @@ void ver_relatorio(struct Vaga vagas[]){
             printf("Tempo desde o inicio da sessao: %d minutos\n", minutos);
             printf("Energia consumida ate o momento: "YELLOW"%.2f"RESET"kWh\n", energia_atual);
             printf("Custo estimado: R$%.2f\n", custo_total);
+            printf("\n");
         }
     }
-    sleep(3);
+    printf("\n");
+    do{
+        printf("Digite 1 para sair do menu: ");
+        scanf("%d", &confirm);
+        printf("\n");
+        if(confirm != 1){
+            printf("Opcao digitada invalida... tente novamente\n");
+        }
+    }while(confirm != 1);
+    sleep(1);
 }
 
 int main(){
-    system("clear"); //Comando para limpar o terminal assim que o program iniciar
+    system("clear"); //Comando para limpar o terminal assim que o program iniciar * Apenas no MacOS e Linux
+    //system("cls"); //Comando para limpar o terminal assim que o programa iniciar * No Windows
     struct Vaga vagas[5];// 5 é o número de vagas 
     int opcao;
     for(int i = 0; i < 5; i++){ //Inicializa as variáveis de struct Vaga em 0, menos horario inicio. 
@@ -445,6 +473,7 @@ int main(){
 
             case 3:
             printf("Opcao 3, ver status das vagas, selecionada\n");
+            printf("\n");
             ver_status(vagas);
             break;
 
@@ -458,7 +487,16 @@ int main(){
             simular_ocpp(vagas);
             break;
 
-            default: printf("Opcao invalida... tente novamente\n");
+            case 0: 
+            printf("Opcao 0, encerrar o programa, selecionada\n");
+            printf(GREEN"Obrigado por ter usado o programa ChargeGrid Intelligence\n");
+            printf("Ate breve!\n"RESET);
+            sleep(2);
+            break;
+
+            default: printf(RED"Opcao invalida... tente novamente\n"RESET);
+            printf("\n");
+            sleep(2);
             break;
         }
 
