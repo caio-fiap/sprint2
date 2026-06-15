@@ -5,6 +5,8 @@
 **Turma:** 1CC | **Campus:** Av. Paulista  
 **Data:** Junho de 2026
 
+LINK DO VIDEO DE DEMONSTRAÇÃO NO YOUTUBE: https://youtu.be/jTNCG5MLmL4
+
 ---
 
 ## 1. Visão Geral do Sistema

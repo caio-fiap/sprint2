@@ -339,7 +339,7 @@ void desconectar_veiculo(struct Vaga vagas[]){
     if(tem_ocupada == 0){
         printf(RED"Nenhum veiculo conectado no momento. \n"RESET);
         printf("\n");
-        sleep(1);
+        sleep(3);
         return;
     }
 
@@ -448,6 +448,7 @@ int main(){
         printf("Bem vindo!\n");
         ocpp_boot_notification();
     do{
+        system("clear");
         verificar_sessoes_concluidas(vagas);
         printf("Digite uma das opcoes abaixo\n");
         printf("1 - Conectar veiculo\n");
